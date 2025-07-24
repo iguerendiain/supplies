@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">NachoLab\'s Supplies</string>
+    <string name="main_screen_tabs_supplies">Supplies</string>
+    <string name="main_screen_tabs_shoppinglist">Shopping List</string>
+    <string name="supplies_screen_import">Import</string>
+    <string name="supplies_screen_export">Export</string>
+</resources>
