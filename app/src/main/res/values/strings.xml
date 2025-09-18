@@ -4,4 +4,17 @@
     <string name="main_screen_tabs_shoppinglist">Shopping List</string>
     <string name="supplies_screen_import">Import</string>
     <string name="supplies_screen_export">Export</string>
+    <string name="supplies_screen_exportdb">Export DB</string>
+    <string name="supplies_screen_logout">Logout</string>
+    <string name="addeditsupplies_screen_editsupply">Edit supply</string>
+    <string name="addeditsupplies_screen_createsupply">Create supply</string>
+    <string name="addeditsupplies_screen_name">Name</string>
+    <string name="addeditsupplies_screen_homelocation">Location at home</string>
+    <string name="addeditsupplies_screen_marketlocation">Location at market</string>
+    <string name="addeditsupplies_screen_stock">Stock</string>
+    <string name="addeditsupplies_screen_save">Save</string>
+    <string name="auth_emaillabel">Type your email address, you\'ll receive a code so you can access your supplies.</string>
+    <string name="auth_authbutton">Send code</string>
+    <string name="auth_codelabel">Type the verification code we sent you to your email address</string>
+    <string name="auth_codebutton">Verify code</string>
 </resources>

@@ -21,6 +21,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import nacholab.supplies.R
 import nacholab.supplies.domain.ShoppingListItem
+import nacholab.supplies.ui.common.FakeNavBar
 import nacholab.supplies.ui.common.FakeStatusBar
 import nacholab.supplies.ui.main.LocationTitle
 import nacholab.supplies.ui.main.ScreenTitle
@@ -89,6 +90,6 @@ fun ShoppingList(
             ToolbarIconButton(Icons.Default.Refresh, onRebuildShoppingList)
             ToolbarIconButton(Icons.Default.CheckCircle, onCommitShoppingList)
         }
-        FakeStatusBar(MaterialTheme.colorScheme.surfaceDim)
+        FakeNavBar()
     }
 }

@@ -6,36 +6,64 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
 import nacholab.supplies.domain.DBRepository
+import nacholab.supplies.domain.NetworkRespository
+import nacholab.supplies.domain.PreferencesRepository
 import nacholab.supplies.domain.RAMRepository
 import nacholab.supplies.domain.ShoppingListItem
 import nacholab.supplies.domain.Supply
+import nacholab.supplies.network.NetworkMapper
 import nacholab.supplies.storage.SupplyMapper
 import java.io.File
 import java.util.UUID
 
 class MainViewModel(
     private val dbRepository: DBRepository,
-    private val ramRepository: RAMRepository
+    private val ramRepository: RAMRepository,
+    private val preferencesRepository: PreferencesRepository,
+    private val networkRespository: NetworkRespository
 ): ViewModel() {
     private val _state = mutableStateOf(MainState.Companion.DEFAULT)
     val state: State<MainState> = _state
 
-    init{
-        viewModelScope.launch {
-            val ramSupplies = ramRepository.getAllSupplies()
+    private var initialized = false
 
-            if (ramSupplies.isEmpty()){
-                dbRepository
-                    .loadCurrentDB()
-                    .map { SupplyMapper.buildFrom(it) }
-                    .let {
-                        ramRepository.storeAllSupplies(it)
-                        _state.value = state.value.copy(supplies = it)
-                    }
-            }else {
-                _state.value = state.value.copy(supplies = ramSupplies)
+    fun initialize(){
+        if (!initialized) viewModelScope.launch {
+            val currentSessionId = preferencesRepository.getSessionId()
+            ramRepository.storeSessionId(currentSessionId)
+
+            if (currentSessionId.isNotBlank()){
+                reloadMySupplies()
+
+                val ramSupplies = ramRepository.getAllSupplies()
+
+                if (ramSupplies.isEmpty()){
+                    dbRepository
+                        .loadCurrentDB()
+                        .map { SupplyMapper.buildFrom(it) }
+                        .let {
+                            ramRepository.storeAllSupplies(it)
+                            _state.value = state.value.copy(
+                                supplies = it,
+                                isAuthenticated = true
+                            )
+                        }
+                }else {
+                    _state.value = state.value.copy(
+                        supplies = ramSupplies,
+                        isAuthenticated = true
+                    )
+                }
+            }else{
+                dbRepository.clearDB()
+                ramRepository.storeAllSupplies(listOf())
+                _state.value = state.value.copy(
+                    supplies = listOf(),
+                    isAuthenticated = false
+                )
             }
         }
+        initialized = true
     }
 
     fun setEditingMode(editingMode: EditingMode){
@@ -114,7 +142,8 @@ class MainViewModel(
             _state.value = state.value.copy(supplies = updatedConsumables)
             dbRepository.updateDB(updatedConsumables.map { SupplyMapper.buildFrom(it) })
             updateConsumablesByHomeLocation()
-            updateConsumablesByHomeLocation()
+            updateConsumablesByMarketLocation()
+            uploadSupplies()
         }
     }
 
@@ -132,7 +161,8 @@ class MainViewModel(
             _state.value = state.value.copy(supplies = updatedConsumables)
             dbRepository.updateDB(updatedConsumables.map { SupplyMapper.buildFrom(it) })
             updateConsumablesByHomeLocation()
-            updateConsumablesByHomeLocation()
+            updateConsumablesByMarketLocation()
+            uploadSupplies()
         }
     }
 
@@ -150,7 +180,8 @@ class MainViewModel(
             _state.value = state.value.copy(supplies = updatedConsumables)
             dbRepository.updateDB(updatedConsumables.map { SupplyMapper.buildFrom(it) })
             updateConsumablesByHomeLocation()
-            updateConsumablesByHomeLocation()
+            updateConsumablesByMarketLocation()
+            uploadSupplies()
         }
     }
 
@@ -168,7 +199,8 @@ class MainViewModel(
             _state.value = state.value.copy(supplies = updatedConsumables)
             dbRepository.updateDB(updatedConsumables.map { SupplyMapper.buildFrom(it) })
             updateConsumablesByHomeLocation()
-            updateConsumablesByHomeLocation()
+            updateConsumablesByMarketLocation()
+            uploadSupplies()
         }
     }
 
@@ -198,6 +230,7 @@ class MainViewModel(
         }
 
         updateDBFromShoppinglist(flatShoppingList)
+        uploadSupplies()
     }
 
     private fun updateDBFromShoppinglist(shoppingList: List<ShoppingListItem>){
@@ -266,7 +299,8 @@ class MainViewModel(
             _state.value = state.value.copy(supplies = updatedConsumables)
             dbRepository.updateDB(updatedConsumables.map { SupplyMapper.buildFrom(it) })
             updateConsumablesByHomeLocation()
-            updateConsumablesByHomeLocation()
+            updateConsumablesByMarketLocation()
+            uploadSupplies()
         }
     }
 
@@ -292,7 +326,8 @@ class MainViewModel(
             _state.value = state.value.copy(supplies = mutableConsumables)
             dbRepository.updateDB(mutableConsumables.map { SupplyMapper.buildFrom(it) })
             updateConsumablesByHomeLocation()
-            updateConsumablesByHomeLocation()
+            updateConsumablesByMarketLocation()
+            uploadSupplies()
         }
     }
 
@@ -302,7 +337,8 @@ class MainViewModel(
             val newSupplies = dbRepository.loadCurrentDB()
             _state.value = state.value.copy(supplies = newSupplies.map { SupplyMapper.buildFrom(it) })
             updateConsumablesByHomeLocation()
-            updateConsumablesByHomeLocation()
+            updateConsumablesByMarketLocation()
+            uploadSupplies()
         }
     }
 
@@ -323,7 +359,156 @@ class MainViewModel(
             _state.value = state.value.copy(supplies = updatedConsumables)
             dbRepository.updateDB(updatedConsumables.map { SupplyMapper.buildFrom(it) })
             updateConsumablesByHomeLocation()
-            updateConsumablesByHomeLocation()
+            updateConsumablesByMarketLocation()
+            uploadSupplies()
+        }
+    }
+
+    fun authenticateUser(email: String) {
+        if (!email.contains("@") || !email.contains(".") || email.length < 8 ){
+            _state.value = state.value.copy(
+                waitingForCodeVerification = false,
+                isAuthenticationLoading = false,
+                authenticationError = "Invalid email address"
+            )
+        }else {
+            if (!state.value.isAuthenticationLoading) {
+                _state.value = state.value.copy(
+                    waitingForCodeVerification = false,
+                    isAuthenticationLoading = true,
+                    authenticationError = null
+                )
+                viewModelScope.launch {
+                    try {
+                        if (networkRespository.authenticateUser(email)) {
+                            _state.value = state.value.copy(
+                                waitingForCodeVerification = true,
+                                isAuthenticationLoading = false,
+                                authenticationError = null
+                            )
+                        } else {
+                            _state.value = state.value.copy(
+                                waitingForCodeVerification = false,
+                                isAuthenticationLoading = false,
+                                authenticationError = "Network error..."
+                            )
+                        }
+                    }catch (e: Exception){
+                        _state.value = state.value.copy(
+                            waitingForCodeVerification = false,
+                            isAuthenticationLoading = false,
+                            authenticationError = e.message + e.stackTraceToString()
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    fun verifyCode(email: String, code: String){
+        if (code.length != 6){
+            _state.value = state.value.copy(
+                waitingForCodeVerification = true,
+                isAuthenticationLoading = false,
+                authenticationError = "Invalid verification code"
+            )
+        }else {
+            if (!state.value.isAuthenticationLoading) {
+                _state.value = state.value.copy(
+                    waitingForCodeVerification = true,
+                    isAuthenticationLoading = true,
+                    authenticationError = null
+                )
+                viewModelScope.launch {
+                    try {
+                        val createdSession = networkRespository.createSession(email, code)
+
+                        if (createdSession!=null){
+                            preferencesRepository.storeSessionId(createdSession.id)
+                            reloadMySupplies()
+                            _state.value = state.value.copy(
+                                isAuthenticated = true,
+                                waitingForCodeVerification = false,
+                                isAuthenticationLoading = false,
+                                authenticationError = null,
+                                suppliesLoading = true
+                            )
+                        }else{
+                            _state.value = state.value.copy(
+                                waitingForCodeVerification = true,
+                                isAuthenticationLoading = false,
+                                authenticationError = "Invalid code!"
+                            )
+                        }
+                    }catch (e: Exception){
+                        _state.value = state.value.copy(
+                            waitingForCodeVerification = true,
+                            isAuthenticationLoading = false,
+                            authenticationError = e.message + e.stackTraceToString()
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    fun clearAuthenticationError(){
+        _state.value = state.value.copy(authenticationError = null)
+    }
+
+    fun reloadMySupplies(){
+        _state.value = state.value.copy(suppliesLoading = true, suppliesLoadingError = null)
+
+        viewModelScope.launch {
+            try {
+                val apiSupplies = networkRespository.getMySupplies()
+                val supplies = apiSupplies.map { SupplyMapper.buildFrom(it) }
+                val dbSupplies = supplies.map { SupplyMapper.buildFrom(it) }
+
+                dbRepository.updateDB(dbSupplies)
+                ramRepository.storeAllSupplies(supplies)
+
+                _state.value = state.value.copy(
+                    supplies = supplies,
+                    suppliesLoading = false,
+                    suppliesLoadingError = null
+                )
+            }catch (e: Exception){
+                _state.value = state.value.copy(
+                    suppliesLoading = false,
+                    suppliesLoadingError = e.message + e.stackTraceToString()
+                )
+            }
+        }
+    }
+
+    private fun uploadSupplies(){
+        _state.value = state.value.copy(suppliesLoading = true, suppliesLoadingError = null)
+
+        viewModelScope.launch {
+            try {
+                networkRespository.saveMySupplies(state.value.supplies.map {
+                    NetworkMapper.buildFrom(
+                        it
+                    )
+                })
+                _state.value = state.value.copy(suppliesLoading = false, suppliesLoadingError = null)
+            }catch (e: Exception){
+                _state.value = state.value.copy(suppliesLoading = false, suppliesLoadingError = e.message + e.stackTraceToString())
+            }
+        }
+    }
+
+    fun clearSuppliesLoadingError(){
+        _state.value = state.value.copy(suppliesLoadingError = null)
+    }
+
+    fun logout() {
+        viewModelScope.launch {
+            preferencesRepository.storeSessionId("")
+            ramRepository.storeAllSupplies(listOf())
+            dbRepository.clearDB()
+            _state.value = MainState.DEFAULT
         }
     }
 }

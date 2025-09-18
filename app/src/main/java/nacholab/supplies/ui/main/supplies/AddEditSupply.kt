@@ -28,8 +28,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import nacholab.supplies.domain.Supply
+import nacholab.supplies.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -59,7 +61,11 @@ fun AddEditSupplyDialog(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = if (consumable != null) "Editar insumo" else "Crear insumo",
+                    text = stringResource(if (consumable != null)
+                        R.string.addeditsupplies_screen_editsupply
+                    else
+                        R.string.addeditsupplies_screen_createsupply
+                    ),
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.weight(1f)
@@ -78,7 +84,7 @@ fun AddEditSupplyDialog(
             Spacer(modifier = Modifier.height(12.dp))
 
             Text(
-                text = "Nombre",
+                text = stringResource(R.string.addeditsupplies_screen_name),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.secondary
             )
@@ -92,7 +98,7 @@ fun AddEditSupplyDialog(
             Spacer(modifier = Modifier.height(12.dp))
 
             Text(
-                text = "Ubicación en la casa",
+                text = stringResource(R.string.addeditsupplies_screen_homelocation),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.secondary
             )
@@ -106,7 +112,7 @@ fun AddEditSupplyDialog(
             Spacer(modifier = Modifier.height(12.dp))
 
             Text(
-                text = "Ubicación en el supermercado",
+                text = stringResource(R.string.addeditsupplies_screen_marketlocation),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.secondary
             )
@@ -120,7 +126,7 @@ fun AddEditSupplyDialog(
             Spacer(modifier = Modifier.height(12.dp))
 
             Text(
-                text = "Stock",
+                text = stringResource(R.string.addeditsupplies_screen_stock),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.secondary
             )
@@ -191,7 +197,7 @@ fun AddEditSupplyDialog(
                     )
                 }
             ) { Text(
-                text = "Guardar",
+                text = stringResource(R.string.addeditsupplies_screen_save),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onPrimary
             ) }

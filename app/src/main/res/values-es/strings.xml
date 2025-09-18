@@ -2,6 +2,19 @@
     <string name="app_name">NachoLab\'s Insumos</string>
     <string name="main_screen_tabs_supplies">Insumos</string>
     <string name="main_screen_tabs_shoppinglist">Lista de compras</string>
-    <string name="supplies_screen_import">Import</string>
-    <string name="supplies_screen_export">Export</string>
+    <string name="supplies_screen_import">Importar</string>
+    <string name="supplies_screen_export">Exportar</string>
+    <string name="supplies_screen_exportdb">Exportar BDD</string>
+    <string name="supplies_screen_logout">Salir</string>
+    <string name="addeditsupplies_screen_editsupply">Editar insumo</string>
+    <string name="addeditsupplies_screen_createsupply">Crear insumo</string>
+    <string name="addeditsupplies_screen_name">Nombre</string>
+    <string name="addeditsupplies_screen_homelocation">Ubicación en la casa</string>
+    <string name="addeditsupplies_screen_marketlocation">Ubicación en el supermercado</string>
+    <string name="addeditsupplies_screen_stock">Stock</string>
+    <string name="addeditsupplies_screen_save">Guardar</string>
+    <string name="auth_emaillabel">Ingresá tu dirección de correo electrónico. Vas a recibir un código para poder acceder a tus insumos.</string>
+    <string name="auth_authbutton">Enviar código</string>
+    <string name="auth_codelabel">Ingresá el código de verificación que enviamos a tu dirección de coreo electrónico</string>
+    <string name="auth_codebutton">Verificá el código</string>
 </resources>

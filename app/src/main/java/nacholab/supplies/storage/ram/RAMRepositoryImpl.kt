@@ -13,4 +13,12 @@ class RAMRepositoryImpl: RAMRepository {
         RAMStorage.supplies = supplies
     }
 
+    override fun getSessionId(): String {
+        return RAMStorage.sessionId
+    }
+
+    override fun storeSessionId(sessionId: String) {
+        RAMStorage.sessionId = sessionId
+    }
+
 }

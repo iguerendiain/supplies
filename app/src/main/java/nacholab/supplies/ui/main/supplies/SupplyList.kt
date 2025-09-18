@@ -19,10 +19,13 @@ import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -33,7 +36,7 @@ import nacholab.supplies.R
 import nacholab.supplies.domain.Supply
 import nacholab.supplies.ui.EditingMode
 import nacholab.supplies.ui.SortMode
-import nacholab.supplies.ui.common.FakeStatusBar
+import nacholab.supplies.ui.common.FakeNavBar
 import nacholab.supplies.ui.main.ComposableStockIndicator
 import nacholab.supplies.ui.main.ConsumableContainer
 import nacholab.supplies.ui.main.ConsumableLocation
@@ -43,6 +46,7 @@ import nacholab.supplies.ui.main.ScreenTitle
 import nacholab.supplies.ui.main.ToolbarIconButton
 import nacholab.supplies.ui.theme.SuppliesTheme
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SupplyList(
     consumables: List<Supply>,
@@ -59,7 +63,9 @@ fun SupplyList(
     onMarketLocationListMode: () -> Unit,
     onSettings: () -> Unit,
     editingMode: EditingMode,
-    sortMode: SortMode
+    sortMode: SortMode,
+    isReloading: Boolean,
+    onReload: () -> Unit,
 ){
     Column(
         modifier = Modifier
@@ -71,125 +77,60 @@ fun SupplyList(
             text = stringResource(R.string.main_screen_tabs_supplies),
             modifier = Modifier.padding(vertical = 12.dp)
         )
-        LazyColumn(
+
+        PullToRefreshBox(
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(1f)
+                .weight(1f),
+            isRefreshing = isReloading,
+            onRefresh = onReload,
+            state = rememberPullToRefreshState()
         ) {
-            when (sortMode) {
-                SortMode.NAME -> consumables.map { consumable ->
-                    item {
-                        ConsumableContainer(
-                            modifier = Modifier.clickable(onClick = {
-                                onAddEditConsumable(
-                                    consumable
-                                )
-                            })
-                        ) {
-                            when (editingMode) {
-                                EditingMode.REQUIRED_STOCK, EditingMode.CURRENT_STOCK -> {
-                                    Column(
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+            ) {
+                when (sortMode) {
+                    SortMode.NAME -> consumables.map { consumable ->
+                        item {
+                            ConsumableContainer(
+                                modifier = Modifier.clickable(onClick = {
+                                    onAddEditConsumable(
+                                        consumable
+                                    )
+                                })
+                            ) {
+                                when (editingMode) {
+                                    EditingMode.REQUIRED_STOCK, EditingMode.CURRENT_STOCK -> {
+                                        Column(
+                                            modifier = Modifier.fillMaxWidth(1f)
+                                        ) {
+                                            ConsumableName(
+                                                consumable.name
+                                            )
+                                            ConsumableLocation(
+                                                homeLocation = consumable.locationAtHome,
+                                                marketLocation = consumable.locationAtMarket
+                                            )
+                                            StockEditButton(
+                                                consumable = consumable,
+                                                onReduceCurrentStock = onReduceCurrentStock,
+                                                onIncreaseCurrentStock = onIncreaseCurrentStock,
+                                                onReduceRequiredStock = onReduceRequiredStock,
+                                                onIncreaseRequiredStock = onIncreaseRequiredStock
+                                            )
+                                        }
+                                    }
+
+                                    else -> Column(
                                         modifier = Modifier.fillMaxWidth(1f)
                                     ) {
                                         ConsumableName(
                                             consumable.name
                                         )
-                                        ConsumableLocation(
-                                            homeLocation = consumable.locationAtHome,
-                                            marketLocation = consumable.locationAtMarket
-                                        )
-                                        StockEditButton(
-                                            consumable = consumable,
-                                            onReduceCurrentStock = onReduceCurrentStock,
-                                            onIncreaseCurrentStock = onIncreaseCurrentStock,
-                                            onReduceRequiredStock = onReduceRequiredStock,
-                                            onIncreaseRequiredStock = onIncreaseRequiredStock
-                                        )
-                                    }
-                                }
-
-                                else -> Column(
-                                    modifier = Modifier.fillMaxWidth(1f)
-                                ) {
-                                    ConsumableName(
-                                        consumable.name
-                                    )
-                                    Row {
-                                        ConsumableLocation(
-                                            homeLocation = consumable.locationAtHome,
-                                            marketLocation = consumable.locationAtMarket,
-                                            modifier = Modifier.weight(1f)
-                                        )
-                                        ComposableStockIndicator(
-                                            consumable.currentStock,
-                                            consumable.requiredStock
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                SortMode.MARKET_LOCATION -> consumablesByMarketLocation
-                    .keys
-                    .forEach {
-                        item { LocationTitle(it) }
-                        consumablesByMarketLocation[it]?.map { consumable ->
-                            item {
-                                ConsumableContainer {
-                                    Column(
-                                        modifier = Modifier
-                                            .fillMaxWidth(1f)
-                                            .clickable(onClick = { onAddEditConsumable(consumable) })
-                                    ) {
-                                        ConsumableName(
-                                            consumable.name
-                                        )
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(1f)
-                                        ) {
+                                        Row {
                                             ConsumableLocation(
                                                 homeLocation = consumable.locationAtHome,
-                                                modifier = Modifier.weight(1f)
-                                            )
-                                            ComposableStockIndicator(
-                                                consumable.currentStock,
-                                                consumable.requiredStock
-                                            )
-                                        }
-                                        if (editingMode == EditingMode.REQUIRED_STOCK || editingMode == EditingMode.CURRENT_STOCK) StockEditButton(
-                                            consumable = consumable,
-                                            onReduceCurrentStock = onReduceCurrentStock,
-                                            onIncreaseCurrentStock = onIncreaseCurrentStock,
-                                            onReduceRequiredStock = onReduceRequiredStock,
-                                            onIncreaseRequiredStock = onIncreaseRequiredStock
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                SortMode.HOME_LOCATION -> consumablesByHomeLocation
-                    .keys
-                    .forEach {
-                        item { LocationTitle(it) }
-                        consumablesByHomeLocation[it]?.map { consumable ->
-                            item {
-                                ConsumableContainer {
-                                    Column(
-                                        modifier = Modifier
-                                            .fillMaxWidth(1f)
-                                            .clickable(onClick = { onAddEditConsumable(consumable) })
-                                    ) {
-                                        ConsumableName(
-                                            consumable.name
-                                        )
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(1f)
-                                        ) {
-                                            ConsumableLocation(
                                                 marketLocation = consumable.locationAtMarket,
                                                 modifier = Modifier.weight(1f)
                                             )
@@ -198,20 +139,103 @@ fun SupplyList(
                                                 consumable.requiredStock
                                             )
                                         }
-                                        if (editingMode == EditingMode.REQUIRED_STOCK || editingMode == EditingMode.CURRENT_STOCK) StockEditButton(
-                                            consumable = consumable,
-                                            onReduceCurrentStock = onReduceCurrentStock,
-                                            onIncreaseCurrentStock = onIncreaseCurrentStock,
-                                            onReduceRequiredStock = onReduceRequiredStock,
-                                            onIncreaseRequiredStock = onIncreaseRequiredStock
-                                        )
                                     }
                                 }
                             }
                         }
                     }
+
+                    SortMode.MARKET_LOCATION -> consumablesByMarketLocation
+                        .keys
+                        .forEach {
+                            item { LocationTitle(it) }
+                            consumablesByMarketLocation[it]?.map { consumable ->
+                                item {
+                                    ConsumableContainer {
+                                        Column(
+                                            modifier = Modifier
+                                                .fillMaxWidth(1f)
+                                                .clickable(onClick = {
+                                                    onAddEditConsumable(
+                                                        consumable
+                                                    )
+                                                })
+                                        ) {
+                                            ConsumableName(
+                                                consumable.name
+                                            )
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(1f)
+                                            ) {
+                                                ConsumableLocation(
+                                                    homeLocation = consumable.locationAtHome,
+                                                    modifier = Modifier.weight(1f)
+                                                )
+                                                ComposableStockIndicator(
+                                                    consumable.currentStock,
+                                                    consumable.requiredStock
+                                                )
+                                            }
+                                            if (editingMode == EditingMode.REQUIRED_STOCK || editingMode == EditingMode.CURRENT_STOCK) StockEditButton(
+                                                consumable = consumable,
+                                                onReduceCurrentStock = onReduceCurrentStock,
+                                                onIncreaseCurrentStock = onIncreaseCurrentStock,
+                                                onReduceRequiredStock = onReduceRequiredStock,
+                                                onIncreaseRequiredStock = onIncreaseRequiredStock
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                    SortMode.HOME_LOCATION -> consumablesByHomeLocation
+                        .keys
+                        .forEach {
+                            item { LocationTitle(it) }
+                            consumablesByHomeLocation[it]?.map { consumable ->
+                                item {
+                                    ConsumableContainer {
+                                        Column(
+                                            modifier = Modifier
+                                                .fillMaxWidth(1f)
+                                                .clickable(onClick = {
+                                                    onAddEditConsumable(
+                                                        consumable
+                                                    )
+                                                })
+                                        ) {
+                                            ConsumableName(
+                                                consumable.name
+                                            )
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(1f)
+                                            ) {
+                                                ConsumableLocation(
+                                                    marketLocation = consumable.locationAtMarket,
+                                                    modifier = Modifier.weight(1f)
+                                                )
+                                                ComposableStockIndicator(
+                                                    consumable.currentStock,
+                                                    consumable.requiredStock
+                                                )
+                                            }
+                                            if (editingMode == EditingMode.REQUIRED_STOCK || editingMode == EditingMode.CURRENT_STOCK) StockEditButton(
+                                                consumable = consumable,
+                                                onReduceCurrentStock = onReduceCurrentStock,
+                                                onIncreaseCurrentStock = onIncreaseCurrentStock,
+                                                onReduceRequiredStock = onReduceRequiredStock,
+                                                onIncreaseRequiredStock = onIncreaseRequiredStock
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                }
             }
         }
+
         Row(
             modifier = Modifier
                 .background(MaterialTheme.colorScheme.surfaceDim)
@@ -244,7 +268,7 @@ fun SupplyList(
                 onAddEditConsumable(null)
             }
         }
-        FakeStatusBar(MaterialTheme.colorScheme.surfaceDim)
+        FakeNavBar()
     }
 }
 
@@ -384,7 +408,9 @@ fun SupplyListPreview(){
             onSettings = {},
             onNameListMode = {},
             onHomeLocationListMode = {},
-            onMarketLocationListMode = {}
+            onMarketLocationListMode = {},
+            isReloading = false,
+            onReload = { }
         )
     }
 }

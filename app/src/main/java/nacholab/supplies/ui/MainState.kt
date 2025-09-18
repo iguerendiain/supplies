@@ -13,7 +13,13 @@ data class MainState(
     val homeLocations: List<String>,
     val editingMode: EditingMode,
     val sort: SortMode,
-    val exportDBToFile: String?
+    val exportDBToFile: String?,
+    val isAuthenticated: Boolean,
+    val isAuthenticationLoading: Boolean,
+    val waitingForCodeVerification: Boolean,
+    val authenticationError: String?,
+    val suppliesLoading: Boolean,
+    val suppliesLoadingError: String?
 ){
     companion object{
         val DEFAULT = MainState(
@@ -26,7 +32,13 @@ data class MainState(
             homeLocations = listOf(),
             editingMode = EditingMode.NO_EDITING,
             sort = SortMode.NAME,
-            exportDBToFile = null
+            exportDBToFile = null,
+            isAuthenticated = false,
+            isAuthenticationLoading = false,
+            waitingForCodeVerification = false,
+            authenticationError = null,
+            suppliesLoading = false,
+            suppliesLoadingError = null,
         )
     }
 }
