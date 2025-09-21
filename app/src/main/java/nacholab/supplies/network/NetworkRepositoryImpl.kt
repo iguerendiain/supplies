@@ -25,7 +25,7 @@ class NetworkRepositoryImpl(
 ): NetworkRespository {
 
     companion object {
-        private const val BASE_URL = "http://nacholab.net:8047"
+        private const val BASE_URL = "https://apisupplies.nacholab.net:8047"
 //        private const val BASE_URL = "http://192.168.1.2:8047"
         private const val HEADER_SESSION_ID = "session_id"
         private const val HEADER_DEVICE_ID = "device_id"

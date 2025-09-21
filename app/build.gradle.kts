@@ -14,8 +14,8 @@ android {
         applicationId = "nacholab.supplies"
         minSdk = 29
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "20250921"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
